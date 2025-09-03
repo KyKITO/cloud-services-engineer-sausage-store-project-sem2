@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ .Release.Name }}-{{ .Chart.Name }}-ingress
 spec:
-  ingressClassName: "nginx"
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
   tls:
     - hosts:
         - {{ .Values.ingress.host }}
