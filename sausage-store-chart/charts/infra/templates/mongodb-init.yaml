@@ -1,3 +1,4 @@
+{{- if .Values.mongodb.init.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -36,14 +37,14 @@ spec:
             -p $MONGO_INITDB_ROOT_PASSWORD \
             --authenticationDatabase admin \
             --eval "
-              db = db.getSiblingDB('{{ .Values.mongodb.database | default "myapp" }}');
+              db = db.getSiblingDB('{{ .Values.mongodb.init.database | default "myapp" }}');
               
-              if (!db.getUser('{{ .Values.mongodb.appUser | default "appuser" }}')) {
+              if (!db.getUser('{{ .Values.mongodb.init.appUser | default "appuser" }}')) {
                 db.createUser({
                   user: '{{ .Values.mongodb.appUser | default "appuser" }}',
                   pwd: '{{ .Values.mongodb.appPassword | default "apppassword" }}',
                   roles: [
-                    { role: 'readWrite', db: '{{ .Values.mongodb.database | default "myapp" }}' }
+                    { role: 'readWrite', db: '{{ .Values.mongodb.init.database | default "myapp" }}' }
                   ]
                 });
                 print('Application user created successfully');
@@ -54,3 +55,4 @@ spec:
               db.createCollection('initialized');
               print('Database initialization completed');
             "
+{{- end }}
