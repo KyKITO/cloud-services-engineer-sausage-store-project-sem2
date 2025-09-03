@@ -12,6 +12,7 @@ env:
   SAUSAGE_STORE_NAMESPACE: YOUR_NAMESPACE
   KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
   VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+  RELEASE_NAME: sausage-store
 
 jobs:
   # Сборка и пуш образов в докерхаб:
@@ -48,29 +49,73 @@ jobs:
             # Для каждого пересобранного образа 
             # устанавливаем тег latest, чтобы потом
             # на сервере и в docker-compose.yml не указывать версию образа:
-            tags: YOUR_DOCKERHUB/sausage-backend:latest
-            build-args: |
-              VERSION=${{ github.sha }}
+            tags: kykito/sausage-backend:latest
+            # build-args: |
+            #   VERSION=${{ github.sha }}
         - name: Push Frontend to DockerHub
           uses: docker/build-push-action@v4
           with:
             context: ./frontend/
             push: true
-            tags: YOUR_DOCKERHUB/sausage-frontend:latest
+            tags: kykito/sausage-frontend:latest
         - name: Push Backend-report to DockerHub
           uses: docker/build-push-action@v4
           with:
             context: ./backend-report/
             push: true
-            tags: YOUR_DOCKERHUB/sausage-backend-report:latest
+            tags: kykito/sausage-backend-report:latest
   # Упаковываем helm-чарт и пушим его в Nexus
   add_helm_chart_to_nexus:
-      name: Add Helm Chart To Nexus
-      runs-on: ubuntu-latest
-      needs: build_and_push_to_docker_hub
+    name: Add Helm Chart To Nexus
+    outputs:
+      chart_version: ${{ steps.chartver.outputs.CHART_VERSION }}
+    runs-on: ubuntu-latest
+    needs: build_and_push_to_docker_hub
 
-      steps:
-      #### Опишите необходимые шаги
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          helm-version: v3.14.4
+
+      - name: Build dependencies 
+        run: helm dependency build "${{ env.CHART_DIR }}"
+
+      - name: Lint 
+        run: helm lint "${{ env.CHART_DIR }}"
+
+      - name: Define chart version
+        id: chartver
+        run: echo "CHART_VERSION=1.0.${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Package 
+        run: |
+           mkdir -p dist
+           helm package "${{ env.CHART_DIR }}" \
+           --version "${{ steps.chartver.outputs.CHART_VERSION }}" \
+           --app-version "${{ steps.chartver.outputs.CHART_VERSION }}" \
+           --destination dist
+
+      - name: Get packaged file name
+        id: chart
+        run: echo "file=$(ls dist/*.tgz)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload chart to Nexus (helm-hosted)
+        env:
+          URL: ${{ env.NEXUS_HELM_REPO }}
+          USER: ${{ env.NEXUS_HELM_REPO_USER }}
+          PASS: ${{ env.NEXUS_HELM_REPO_PASSWORD }}
+          FILE: ${{ steps.chart.outputs.file }}
+        run: |
+          set -euo pipefail
+          BN=$(basename "$FILE")
+          curl -fS -u "$USER:$PASS" \
+          -H "Content-Type: application/gzip" \
+          --upload-file "$FILE" \
+           "$URL/$BN"
 
   # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
@@ -79,4 +124,26 @@ jobs:
       needs: add_helm_chart_to_nexus
 
       steps:
-      #### Опишите необходимые шаги
+        
+        - name: Setup Helm
+          uses: azure/setup-helm@v4
+          with:
+            helm-version: v3.14.4
+
+        - name: Prepare kubeconfig
+          run: |
+              mkdir -p $HOME/.kube
+              echo "${KUBE_CONFIG}" > $HOME/.kube/config
+              chmod 600 $HOME/.kube/config
+
+        - name: Helm repo add
+          run:  |
+              helm repo add nexus $NEXUS_HELM_REPO --username $NEXUS_HELM_REPO_USER --password $NEXUS_HELM_REPO_PASSWORD
+              helm repo update
+        
+        - name: Deploy chart
+          run: |
+              helm upgrade --install "${RELEASE_NAME}" "nexus/sausage-store" \
+              --namespace "${SAUSAGE_STORE_NAMESPACE}" \
+              --version "${{ needs.add_helm_chart_to_nexus.outputs.chart_version }}" \
+              --wait --timeout 5m
