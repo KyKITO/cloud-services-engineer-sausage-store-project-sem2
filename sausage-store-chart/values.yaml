@@ -7,7 +7,6 @@ global:
 
 
 frontend:
-### В чарте frontend отсутствуют некоторые важные файлы. Поймите какие и опишите их.
   replicas: 1
   revisionHistoryLimit: 15
   strategy:
@@ -15,11 +14,12 @@ frontend:
   service:
     port: 80
   ingress:
-    host: YOUR_STUDENT_HOSTNAME.students-projects.ru # Корректный домен будет указан в задании
+    ingressClassName: nginx
+    host: front-nikitakudukhov.sem2.students-projects.ru 
     path: /
     pathType: Prefix
   containerPort: 80
-  image: YOUR_DOCKERHUB/sausage-frontend:latest
+  image: kykito/sausage-frontend:latest
   resources:
     requests:
       memory: "128Mi"
@@ -45,8 +45,11 @@ backend:
   revisionHistoryLimit: 15
   replicas: 1
   strategy:
-  ### Опишите стратегию RollingUpdate для бэкенда
-  image: YOUR_DOCKERHUB/sausage-backend:latest
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 30%
+      maxUnavailable: 50%
+  image: kykito/sausage-backend:latest
   imagePullPolicy: Always
   resources:
     requests:
@@ -57,22 +60,79 @@ backend:
       cpu: "1"
   containerPort: 8080
   livenessProbe:
-  ### Опишите LivenessProbe для бэкенда
+    httpGet:
+      path: /actuator/health
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 15
+    timeoutSeconds: 1
+    failureThreshold: 6
   vpa:
-  ### Опишите VPA для бэкенда
+    updatePolicy:
+      updateMode: "Auto"
+    resourcePolicy:
+      containerPolicies:
+        - containerName: "*"
+          minAllowed:
+            cpu: 0m
+            memory: 0Mi
+          maxAllowed:
+            cpu: 1
+            memory: 1Gi
+          controlledResources: ["cpu", "memory"]
+          controlledValues: RequestsAndLimits
+
 
 backend-report:
-### Опишите значения для backend-report
-### Приложение должно использовать стратегию Recreate
-### Приложение использует переменную PORT - порт, на котором оно запустится и DB - Uri-подключение к mongodb. 
-### DB положите в Secret, PORT в ConfigMap
-### Опишите HPA для backend-report
+  replicas: 1
+  revisionHistoryLimit: 15
+  strategy:
+    type: Recreate
+  env:
+    port: 8080
+    db: mongodb://reports:reportspassword@mongodb:27017/sausage-store
+  image: kykito/sausage-backend-report:latest
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  containerPort: 8080
+
 
 infra:
   postgresql:
-  ### Опишите необходимые переменные для развертывания PostgresQL в кластере Kubernetes
+    env:
+      POSTGRES_DB: "sausage-store"
+      POSTGRES_USER: "store"
+      POSTGRES_PASSWORD: "passwordstore"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    containerPort: 5432
   mongodb:
     env:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
     containerPort: 27017
+    init:
+      enabled: "true"
+      database: sausage-store
+      appUser: reports
+      appPassword: reportspassword
+
