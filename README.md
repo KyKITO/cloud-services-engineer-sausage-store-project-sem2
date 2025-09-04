@@ -33,4 +33,4 @@ npm install -g http-server
 sudo http-server ./dist/frontend/ -p 80 --proxy http://localhost:8080
 ```
 
-Then open your browser and go to [http://localhost](http://localhost)
+Then open your browser and go to [https://front-nikitakudukhov.sem2.students-projects.ru](https://front-nikitakudukhov.sem2.students-projects.ru)
