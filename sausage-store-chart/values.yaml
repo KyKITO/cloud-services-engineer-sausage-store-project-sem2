@@ -37,7 +37,7 @@ backend:
   env:
     postgresUri: jdbc:postgresql://postgresql:5432/sausage-store
     postgresUser: store
-    postgresPassword: storepassword
+    postgresPassword: passwordstore
     reportPath: /logs/reports
     logPath: /logs
   service:
