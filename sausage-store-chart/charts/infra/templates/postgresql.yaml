@@ -22,7 +22,7 @@ spec:
         ports:
         - containerPort: {{ .Values.postgresql.containerPort }}
         resources:
-{{ toYaml .Values.resources | indent 12 }} 
+{{ toYaml .Values.postgresql.resources | indent 12 }} 
         volumeMounts:
         - name: postgresql-data
           mountPath: /var/lib/postgresql/data
