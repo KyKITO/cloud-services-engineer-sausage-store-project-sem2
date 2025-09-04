@@ -14,6 +14,7 @@ frontend:
   service:
     port: 80
   ingress:
+    secretName: 2sem-students-projects-wildcard-secret
     ingressClassName: nginx
     host: front-nikitakudukhov.sem2.students-projects.ru 
     path: /
@@ -115,7 +116,6 @@ backend-report:
         type: Utilization
         averageUtilization: 80
   containerPort: 8080
-
 
 infra:
   postgresql:
