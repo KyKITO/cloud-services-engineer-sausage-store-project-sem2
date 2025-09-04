@@ -58,7 +58,7 @@ spec:
                   user: '{{ .Values.mongodb.appUser | default "reports" }}',
                   pwd: '{{ .Values.mongodb.appPassword | default "reportspassword" }}',
                   roles: [
-                    { role: 'readWrite', db: '{{ .Values.mongodb.init.database | default "myapp" }}' }
+                    { role: 'readWrite', db: '{{ .Values.mongodb.init.database | default "sausage-store" }}' }
                   ]
                 });
                 print('Application user created successfully');
