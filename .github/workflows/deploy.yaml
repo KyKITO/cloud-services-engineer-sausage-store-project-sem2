@@ -50,8 +50,8 @@ jobs:
             # устанавливаем тег latest, чтобы потом
             # на сервере и в docker-compose.yml не указывать версию образа:
             tags: kykito/sausage-backend:latest
-            # build-args: |
-            #   VERSION=${{ github.sha }}
+            build-args: |
+              VERSION=${{ github.sha }}
         - name: Push Frontend to DockerHub
           uses: docker/build-push-action@v4
           with:
