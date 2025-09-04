@@ -13,6 +13,7 @@ env:
   KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
   # VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
   RELEASE_NAME: sausage-store
+  CHART_DIR: sausage-store-chart/sausage-store 
 
 jobs:
   # Сборка и пуш образов в докерхаб:
