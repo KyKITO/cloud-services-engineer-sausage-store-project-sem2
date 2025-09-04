@@ -51,12 +51,12 @@ spec:
             -p $MONGO_INITDB_ROOT_PASSWORD \
             --authenticationDatabase admin \
             --eval "
-              db = db.getSiblingDB('{{ .Values.mongodb.init.database | default "myapp" }}');
+              db = db.getSiblingDB('{{ .Values.mongodb.init.database | default "sausage-store" }}');
               
-              if (!db.getUser('{{ .Values.mongodb.init.appUser | default "appuser" }}')) {
+              if (!db.getUser('{{ .Values.mongodb.init.appUser | default "reports" }}')) {
                 db.createUser({
-                  user: '{{ .Values.mongodb.appUser | default "appuser" }}',
-                  pwd: '{{ .Values.mongodb.appPassword | default "apppassword" }}',
+                  user: '{{ .Values.mongodb.appUser | default "reports" }}',
+                  pwd: '{{ .Values.mongodb.appPassword | default "reportspassword" }}',
                   roles: [
                     { role: 'readWrite', db: '{{ .Values.mongodb.init.database | default "myapp" }}' }
                   ]
