@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: postgresql
-        image: postgres:15
+        image: postgres:16
         envFrom:
           - configMapRef:
               name: postgresql-conf
@@ -25,7 +25,7 @@ spec:
 {{ toYaml .Values.postgresql.resources | indent 10 }} 
         volumeMounts:
         - name: postgresql-data
-          mountPath: /var/lib/postgresql/data
+          mountPath: /var/lib/postgresql
   volumeClaimTemplates:
   - metadata:
       name: postgresql-data
@@ -43,7 +43,6 @@ data:
   POSTGRES_DB: {{ .Values.postgresql.env.POSTGRES_DB }}
   POSTGRES_USER: {{ .Values.postgresql.env.POSTGRES_USER }}
   POSTGRES_PASSWORD: {{ .Values.postgresql.env.POSTGRES_PASSWORD }}
-  PG_DATA: {{ .Values.postgresql.env.PGDATA }}
 ---
 apiVersion: v1
 kind: Service

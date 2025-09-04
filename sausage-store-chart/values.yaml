@@ -123,7 +123,6 @@ infra:
       POSTGRES_DB: "sausage-store"
       POSTGRES_USER: "store"
       POSTGRES_PASSWORD: "passwordstore"
-      PGDATA: /var/lib/postgresql/data/pgdata
     containerPort: 5432
     resources:
       requests:
